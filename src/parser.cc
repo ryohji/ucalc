@@ -1,43 +1,49 @@
 #include "ucalc.h"
+
 #include <cstring>
 #include <exception>
 #include <iostream>
 #include <iterator>
 #include <sstream>
 
+inline bool eq(const char *str1, const char *str2) {
+    return std::strcmp(str1, str2) == 0;
+}
+
 struct result {
-    int n;
-    ucalc::expr_ptr e;
+    ucalc::expr_ptr expr;
+    const char *const *next;
 };
 
-result parse(int argn, const char *const *args) {
-    if (argn > 0) {
-        if (std::strcmp("+", *args) == 0) {
-            auto r1 = parse(argn - 1, args + 1);
-            auto r2 = parse(r1.n, args + argn - r1.n);
-            return {r2.n, ucalc::new_addition(r1.e, r2.e)};
-        } else if (std::strcmp("-", *args) == 0) {
-            auto r1 = parse(argn - 1, args + 1);
-            auto r2 = parse(r1.n, args + argn - r1.n);
-            auto e = ucalc::new_negation(r2.e);
-            return {r2.n, ucalc::new_addition(r1.e, e)};
-        } else if (std::strcmp("*", *args) == 0) {
-            auto r1 = parse(argn - 1, args + 1);
-            auto r2 = parse(r1.n, args + argn - r1.n);
-            return {r2.n, ucalc::new_multipliation(r1.e, r2.e)};
-        } else if (std::strcmp("/", *args) == 0) {
-            auto r1 = parse(argn - 1, args + 1);
-            auto r2 = parse(r1.n, args + argn - r1.n);
-            auto e = ucalc::new_inversion(r2.e);
-            return {r2.n, ucalc::new_multipliation(r1.e, e)};
+result parse(const char *const *const begin, const char *const *const end) {
+    if (begin != end) {
+        if (eq("+", *begin)) {
+            auto a = parse(begin + 1, end);
+            auto b = parse(a.next, end);
+            return {ucalc::new_addition(a.expr, b.expr), b.next};
+        } else if (eq("-", *begin)) {
+            auto a = parse(begin + 1, end);
+            auto b = parse(a.next, end);
+            auto expr = ucalc::new_negation(b.expr);
+            return {ucalc::new_addition(a.expr, expr), b.next};
+        } else if (eq("*", *begin)) {
+            auto a = parse(begin + 1, end);
+            auto b = parse(a.next, end);
+            return {ucalc::new_multipliation(a.expr, b.expr), b.next};
+        } else if (eq("/", *begin)) {
+            auto a = parse(begin + 1, end);
+            auto b = parse(a.next, end);
+            auto expr = ucalc::new_inversion(b.expr);
+            return {ucalc::new_multipliation(a.expr, expr), b.next};
         } else {
-            char *end;
-            auto value = std::strtod(*args, &end);
-            if (std::strlen(*args) == end - *args) {
-                return {argn - 1, ucalc::new_value(value)};
+            char *it;
+            auto &&text = *begin;
+            auto value = std::strtod(text, &it);
+            if (std::strlen(text) == std::distance(text, static_cast<const char *>(it))) {
+                return {ucalc::new_value(value), begin + 1};
             } else {
                 auto &&os = std::ostringstream();
-                os << "cannot interpret as number: " << *args;
+                os << "cannot interpret as number: " << text;
                 throw std::invalid_argument(os.str());
             }
         }
@@ -48,16 +54,25 @@ result parse(int argn, const char *const *args) {
 
 int main(int argn, const char *const *args) {
     try {
-        auto result = parse(argn - 1, args + 1);
-        if (result.n == 0) {
-            std::cout << ucalc::evaluate(result.e) << std::endl;
-            return 0;
+        auto &&begin = args + 1;
+        auto &&end = args + argn;
+        if (begin == end) {
+            std::cout << "Usage: " << *args << " [expression]...\n";
         } else {
-            std::cerr << "cannot parse input correctly."
-                      << " n = " << result.n << std::endl;
-            return 1;
+            auto result = parse(begin, end);
+            std::cout << ucalc::evaluate(result.expr) << std::endl;
+            if (result.next != end) {
+                auto &&os = std::cerr;
+                os << "extra (ignored) arguments:";
+                for (auto it = result.next; it != end; ++it) {
+                    os << " " << *it;
+                }
+                os << std::endl;
+            }
         }
+        return 0;
     } catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
+        return 1;
     }
 }
