@@ -1,6 +1,6 @@
 #include "ucalc.h"
+#include <memory.h>
 #include <stdlib.h>
-#include <string.h>
 
 typedef enum expr_type {
     EXPR_VAL,
@@ -23,12 +23,6 @@ struct ucalc_expr {
     } as;
 };
 
-ucalc_expr_t *ucalc_new_value(double value) {
-    ucalc_expr_t *const p = malloc(sizeof(ucalc_expr_t));
-    memcpy(p, &(ucalc_expr_t){.type = EXPR_VAL, .ref = 1, .as.value = value}, sizeof(*p));
-    return p;
-}
-
 double ucalc_evaluate(ucalc_expr_t *expr) {
     switch (expr->type) {
     case EXPR_VAL:
@@ -46,42 +40,40 @@ double ucalc_evaluate(ucalc_expr_t *expr) {
     }
 }
 
+ucalc_expr_t *ucalc_new_value(double value) {
+    return memcpy(malloc(sizeof(ucalc_expr_t)),
+                  &(ucalc_expr_t){.type = EXPR_VAL, .ref = 1, .as.value = value},
+                  sizeof(ucalc_expr_t));
+}
+
 ucalc_expr_t *ucalc_new_addition(ucalc_expr_t *e1, ucalc_expr_t *e2) {
-    ucalc_expr_t *const p = malloc(sizeof(ucalc_expr_t));
-    memcpy(p,
-           &(ucalc_expr_t){.type = EXPR_ADD, .ref = 1, .as.pair.fst = e1, .as.pair.snd = e2},
-           sizeof(*p));
     e1->ref += 1;
     e2->ref += 1;
-    return p;
+    return memcpy(malloc(sizeof(ucalc_expr_t)),
+                  &(ucalc_expr_t){.type = EXPR_ADD, .ref = 1, .as.pair.fst = e1, .as.pair.snd = e2},
+                  sizeof(ucalc_expr_t));
 }
 
 ucalc_expr_t *ucalc_new_negation(ucalc_expr_t *expr) {
-    ucalc_expr_t *const p = malloc(sizeof(ucalc_expr_t));
-    memcpy(p,
-           &(ucalc_expr_t){.type = EXPR_NEG, .ref = 1, .as.expr = expr},
-           sizeof(*p));
     expr->ref += 1;
-    return p;
+    return memcpy(malloc(sizeof(ucalc_expr_t)),
+                  &(ucalc_expr_t){.type = EXPR_NEG, .ref = 1, .as.expr = expr},
+                  sizeof(ucalc_expr_t));
 }
 
 ucalc_expr_t *ucalc_new_multiplication(ucalc_expr_t *e1, ucalc_expr_t *e2) {
-    ucalc_expr_t *const p = malloc(sizeof(ucalc_expr_t));
-    memcpy(p,
-           &(ucalc_expr_t){.type = EXPR_MUL, .ref = 1, .as.pair.fst = e1, .as.pair.snd = e2},
-           sizeof(*p));
     e1->ref += 1;
     e2->ref += 1;
-    return p;
+    return memcpy(malloc(sizeof(ucalc_expr_t)),
+                  &(ucalc_expr_t){.type = EXPR_MUL, .ref = 1, .as.pair.fst = e1, .as.pair.snd = e2},
+                  sizeof(ucalc_expr_t));
 }
 
 ucalc_expr_t *ucalc_new_inversion(ucalc_expr_t *expr) {
-    ucalc_expr_t *const p = malloc(sizeof(ucalc_expr_t));
-    memcpy(p,
-           &(ucalc_expr_t){.type = EXPR_INV, .ref = 1, .as.expr = expr},
-           sizeof(*p));
     expr->ref += 1;
-    return p;
+    return memcpy(malloc(sizeof(ucalc_expr_t)),
+                  &(ucalc_expr_t){.type = EXPR_INV, .ref = 1, .as.expr = expr},
+                  sizeof(ucalc_expr_t));
 }
 
 void ucalc_delete(ucalc_expr_t *expr) {
