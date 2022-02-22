@@ -31,32 +31,32 @@ namespace ucalc {
 
 typedef std::shared_ptr<::ucalc_expr_t> expr_ptr;
 
-inline expr_ptr new_expr(::ucalc_expr_t *expr) {
+inline expr_ptr wrap(::ucalc_expr_t *expr) {
     return expr_ptr(expr, ::ucalc_delete);
 }
 
-inline expr_ptr new_value(double value) {
-    return new_expr(::ucalc_new_value(value));
+inline expr_ptr value(double value) {
+    return wrap(::ucalc_new_value(value));
 }
 
 inline double evaluate(expr_ptr expr) {
     return ::ucalc_evaluate(expr.get());
 }
 
-inline expr_ptr new_negation(expr_ptr expr) {
-    return new_expr(::ucalc_new_negation(expr.get()));
+inline expr_ptr negate(expr_ptr expr) {
+    return wrap(::ucalc_new_negation(expr.get()));
 }
 
-inline expr_ptr new_inversion(expr_ptr expr) {
-    return new_expr(::ucalc_new_inversion(expr.get()));
+inline expr_ptr invert(expr_ptr expr) {
+    return wrap(::ucalc_new_inversion(expr.get()));
 }
 
-inline expr_ptr new_addition(expr_ptr e1, expr_ptr e2) {
-    return new_expr(::ucalc_new_addition(e1.get(), e2.get()));
+inline expr_ptr add(expr_ptr e1, expr_ptr e2) {
+    return wrap(::ucalc_new_addition(e1.get(), e2.get()));
 }
 
-inline expr_ptr new_multipliation(expr_ptr e1, expr_ptr e2) {
-    return new_expr(::ucalc_new_multiplication(e1.get(), e2.get()));
+inline expr_ptr multiply(expr_ptr e1, expr_ptr e2) {
+    return wrap(::ucalc_new_multiplication(e1.get(), e2.get()));
 }
 
 } // namespace ucalc
