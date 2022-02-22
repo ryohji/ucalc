@@ -21,3 +21,10 @@ clang -c src/ucalc.c
 clang -c src/parser.cc -std=c++14
 clang -o ucalc -lc++ *.o
 ```
+
+Or you can use `make` to build:
+```sh
+make -C src
+```
+
+Note that `make` generates the command under the src directory.
