@@ -6,14 +6,41 @@
 #include <iterator>
 #include <sstream>
 
-inline bool eq(const char *str1, const char *str2) {
-    return std::strcmp(str1, str2) == 0;
-}
-
 struct result {
     ucalc::expr_ptr expr;
     const char *const *next;
 };
+
+result parse(const char *const *const begin, const char *const *const end);
+
+int main(int argn, const char *const *args) {
+    try {
+        auto &&begin = args + 1;
+        auto &&end = args + argn;
+        if (begin == end) {
+            std::cout << "Usage: " << *args << " [expression]...\n";
+        } else {
+            auto result = parse(begin, end);
+            std::cout << ucalc::evaluate(result.expr) << std::endl;
+            if (result.next != end) {
+                auto &&os = std::cerr;
+                os << "extra (ignored) arguments:";
+                for (auto it = result.next; it != end; ++it) {
+                    os << " " << *it;
+                }
+                os << std::endl;
+            }
+        }
+        return 0;
+    } catch (std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        return 1;
+    }
+}
+
+inline bool eq(const char *str1, const char *str2) {
+    return std::strcmp(str1, str2) == 0;
+}
 
 result parse(const char *const *const begin, const char *const *const end) {
     if (begin != end) {
@@ -49,30 +76,5 @@ result parse(const char *const *const begin, const char *const *const end) {
         }
     } else {
         throw std::invalid_argument("insufficient argments.");
-    }
-}
-
-int main(int argn, const char *const *args) {
-    try {
-        auto &&begin = args + 1;
-        auto &&end = args + argn;
-        if (begin == end) {
-            std::cout << "Usage: " << *args << " [expression]...\n";
-        } else {
-            auto result = parse(begin, end);
-            std::cout << ucalc::evaluate(result.expr) << std::endl;
-            if (result.next != end) {
-                auto &&os = std::cerr;
-                os << "extra (ignored) arguments:";
-                for (auto it = result.next; it != end; ++it) {
-                    os << " " << *it;
-                }
-                os << std::endl;
-            }
-        }
-        return 0;
-    } catch (std::exception &e) {
-        std::cerr << e.what() << std::endl;
-        return 1;
     }
 }
