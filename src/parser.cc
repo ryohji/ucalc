@@ -9,13 +9,17 @@
 #include <sstream>
 #include <string>
 
-struct result {
-    ucalc::expr_ptr expr;
-    const char *const *next;
+struct range {
+    const char *const *const begin, *const *const end;
 };
 
-result parse(const char *const *const begin, const char *const *const end);
-std::string to_string(const result &result, const char *const *const end);
+struct result {
+    ucalc::expr_ptr expr;
+    struct range remainder;
+};
+
+result parse(struct range range);
+std::string to_string(const result &result);
 
 int main(int argn, const char *const *args) {
     try {
@@ -23,8 +27,8 @@ int main(int argn, const char *const *args) {
         if (args + 1 == end) {
             std::cout << "Usage: " << args[0] << " [expression]...\n";
         } else {
-            auto &&result = parse(args + 1, end);
-            std::cout << to_string(result, end) << std::endl;
+            auto &&result = parse({args + 1, end});
+            std::cout << to_string(result) << std::endl;
         }
         return 0;
     } catch (std::exception &e) {
@@ -46,20 +50,23 @@ const auto &&bin_ops = std::map<const std::string, const bin_op>{
 };
 
 double as_double(const char *token) throw(std::invalid_argument);
-result parse(const char *const *const begin, const char *const *const end) {
+result parse(range range) {
+    auto &&begin = range.begin;
+    auto &&end = range.end;
     if (begin == end) {
         throw std::invalid_argument("insufficient arguments.");
     }
 
+    auto &&next = (struct range){begin + 1, end};
     auto &&found = bin_ops.find(*begin);
     if (found != std::cend(bin_ops)) {
         auto &&op = found->second;
-        auto &&a = parse(begin + 1, end);
-        auto &&b = parse(a.next, end);
-        return {op.f(a.expr, op.m(b.expr)), b.next};
+        auto &&a = parse(next);
+        auto &&b = parse(a.remainder);
+        return {op.f(a.expr, op.m(b.expr)), b.remainder};
     } else {
         auto &&v = as_double(*begin);
-        return {ucalc::value(v), begin + 1};
+        return {ucalc::value(v), next};
     }
 }
 
@@ -74,13 +81,16 @@ inline double as_double(const char *token) throw(std::invalid_argument) {
     return value;
 }
 
-inline std::string to_string(const result &result, const char *const *const end) {
+inline std::string to_string(const result &result) {
     auto &&os = std::ostringstream();
     os << ucalc::evaluate(result.expr);
-    if (result.next != end) {
+
+    auto &&begin = result.remainder.begin;
+    auto &&end = result.remainder.end;
+    if (begin != end) {
         os << std::endl
            << "extra (ignored) arguments: ";
-        std::copy(result.next, end, std::ostream_iterator<const char *>(os, " "));
+        std::copy(begin, end, std::ostream_iterator<const char *>(os, " "));
     }
     return os.str();
 }
