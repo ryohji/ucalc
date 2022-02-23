@@ -47,9 +47,9 @@ struct bin_op {
 };
 
 auto &&bin_ops = std::map<std::string, bin_op>{
-    {"+", {ucalc::add, [](auto &&e) { return e; }}},
+    {"+", {ucalc::add, [](auto &&e) { return std::move(e); }}},
     {"-", {ucalc::add, ucalc::negate}},
-    {"*", {ucalc::multiply, [](auto &&e) { return e; }}},
+    {"*", {ucalc::multiply, [](auto &&e) { return std::move(e); }}},
     {"/", {ucalc::multiply, ucalc::invert}},
 };
 
@@ -78,7 +78,7 @@ inline result application(const bin_op &op,
 inline double as_double(const char *token) throw(std::invalid_argument) {
     const char *end;
     auto &&value = std::strtod(token, const_cast<char **>(&end));
-    if (std::strlen(token) != std::distance(token, end)) {
+    if (std::strlen(token) - std::distance(token, end) != 0) {
         auto &&os = std::ostringstream();
         os << "cannot interpret as a number: " << token;
         throw std::invalid_argument(os.str());

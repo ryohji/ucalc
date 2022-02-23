@@ -1,5 +1,6 @@
-CFLAGS+=-Wall -Wextra
-CXXFLAGS+=-std=c++14
+C_CHECK=-Wall -Wextra
+CFLAGS+=$(C_CHECK)
+CXXFLAGS+=$(C_CHECK) -std=c++14
 
 ucalc: parser.o ucalc.o
 	$(CC) -o $@ $(LDFLAGS) -lc++ $^
