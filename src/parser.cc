@@ -37,16 +37,12 @@ int main(int argn, const char *const *args) {
     }
 }
 
-struct bin_op {
-    std::function<ucalc::expr_ptr(ucalc::expr_ptr, ucalc::expr_ptr)> f; // function
-    std::function<ucalc::expr_ptr(ucalc::expr_ptr)> m;                  // modifier
-};
-
-const auto &&bin_ops = std::map<const std::string, const bin_op>{
-    {"+", {ucalc::add, [](auto &&e) { return std::move(e); }}},
-    {"-", {ucalc::add, ucalc::negate}},
-    {"*", {ucalc::multiply, [](auto &&e) { return std::move(e); }}},
-    {"/", {ucalc::multiply, ucalc::invert}},
+typedef std::function<ucalc::expr_ptr(ucalc::expr_ptr, ucalc::expr_ptr)> bin_fun_t;
+const auto &&bin_ops = std::map<const std::string, const bin_fun_t>{
+    {"+", ucalc::add},
+    {"-", [](auto &&a, auto &&b) { return ucalc::add(a, ucalc::negate(b)); }},
+    {"*", ucalc::multiply},
+    {"/", [](auto &&a, auto &&b) { return ucalc::multiply(a, ucalc::invert(b)); }},
 };
 
 double as_double(const char *token) throw(std::invalid_argument);
@@ -60,10 +56,10 @@ result parse(range range) {
     auto &&next = (struct range){begin + 1, end};
     auto &&found = bin_ops.find(*begin);
     if (found != std::cend(bin_ops)) {
-        auto &&op = found->second;
+        auto &&expr_from = found->second;
         auto &&a = parse(next);
         auto &&b = parse(a.remainder);
-        return {op.f(a.expr, op.m(b.expr)), b.remainder};
+        return {expr_from(a.expr, b.expr), b.remainder};
     } else {
         auto &&v = as_double(*begin);
         return {ucalc::value(v), next};
