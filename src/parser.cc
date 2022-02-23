@@ -1,5 +1,6 @@
 #include "ucalc.h"
 
+#include <cstring>
 #include <exception>
 #include <functional>
 #include <iostream>
@@ -52,27 +53,35 @@ auto &&bin_ops = std::map<std::string, bin_op>{
     {"/", {ucalc::multiply, ucalc::invert}},
 };
 
+result application(const bin_op &op, const char *const *const begin, const char *const *const end);
+double as_double(const char *token) throw(std::invalid_argument);
 result parse(const char *const *const begin, const char *const *const end) {
     if (begin != end) {
-        auto &&text = *begin;
-        auto &&found = bin_ops.find(text);
+        auto &&found = bin_ops.find(*begin);
         if (found != std::cend(bin_ops)) {
-            auto &&op = found->second;
-            auto &&a = parse(begin + 1, end);
-            auto &&b = parse(a.next, end);
-            return {op.f(a.expr, op.m(b.expr)), b.next};
+            return application(found->second, begin + 1, end);
         } else {
-            char *it;
-            auto &&value = std::strtod(text, &it);
-            if (std::strlen(text) == std::distance(text, static_cast<const char *>(it))) {
-                return {ucalc::value(value), begin + 1};
-            } else {
-                auto &&os = std::ostringstream();
-                os << "cannot interpret as a number: " << text;
-                throw std::invalid_argument(os.str());
-            }
+            return {ucalc::value(as_double(*begin)), begin + 1};
         }
     } else {
-        throw std::invalid_argument("insufficient argments.");
+        throw std::invalid_argument("insufficient arguments.");
     }
+}
+
+inline result application(const bin_op &op,
+                          const char *const *const begin, const char *const *const end) {
+    auto &&a = parse(begin, end);
+    auto &&b = parse(a.next, end);
+    return {op.f(a.expr, op.m(b.expr)), b.next};
+}
+
+inline double as_double(const char *token) throw(std::invalid_argument) {
+    const char *end;
+    auto &&value = std::strtod(token, const_cast<char **>(&end));
+    if (std::strlen(token) != std::distance(token, end)) {
+        auto &&os = std::ostringstream();
+        os << "cannot interpret as a number: " << token;
+        throw std::invalid_argument(os.str());
+    }
+    return value;
 }
